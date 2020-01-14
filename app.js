@@ -14,6 +14,7 @@ puppeteer
       })
       .then(html => {
         const $ = cheerio.load(html);
+        console.log($);
         const loginPage = $('.login-page');
         console.log(loginPage);
       })

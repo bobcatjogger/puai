@@ -1,10 +1,11 @@
 {
   "name": "puai",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "PU Market Data Aggregator",
+  "repository": "git@github.com:bobcatjogger/puai.git",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./app.js"
   },
   "author": "",
   "license": "ISC",
