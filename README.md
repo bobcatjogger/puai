@@ -1,2 +1,3 @@
 # puai
-PU Market Data Aggregater
+PU Market Data Aggregator
+Trying to automate 
