@@ -5,13 +5,15 @@
   "repository": "git@github.com:bobcatjogger/puai.git",
   "main": "app.js",
   "scripts": {
-    "start": "node ./app.js"
+    "start": "node ./src/app.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "apify": "^0.18.1",
     "axios": "^0.19.1",
     "cheerio": "^1.0.0-rc.3",
+    "dotenv": "^8.2.0",
     "puppeteer": "^2.0.0"
   }
 }
