@@ -1,6 +1,7 @@
 require('dotenv').config();
 const util = require('./utils');
 const readline = require('readline');
+const moment = require('moment');
 
 async function startBrowser(settings) {
   const browser = await puppeteer.launch({ headless:settings.isHeadless });
@@ -81,8 +82,7 @@ async function findByLink(page, linkString) {
 //   console.log('Fin.');
 // });
 
-
-function askQuestion(query) {
+async function askQuestion(query) {
   const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -93,8 +93,6 @@ function askQuestion(query) {
       resolve(ans);
   }))
 }
-  
-const ans = await askQuestion("Are you sure you want to deploy to PRODUCTION? ");
 
 async function helloWorld(settings) {
   if (settings.connection) {
@@ -116,8 +114,8 @@ async function helloWorld(settings) {
 }
 
 // Main entry point
-(async () => {
-  console.log(`*** Starting at ${Date.now()} ***`);
+const start = async function() {
+  console.log(`*** Starting at ${moment().format()} ***`);
 
   // build the settings PoJSO
   const settings = {
@@ -133,9 +131,28 @@ async function helloWorld(settings) {
   settings.viewport = {'width': settings.width, 'height': settings.height};
   
   // start the party
-  // await helloWorld(settings);
 
- 
+  let iWannaLoop = true;
+  do {
+    let ans = await askQuestion(`[${moment().format()}] | Enter command :  `);
+
+    switch (ans.toLowerCase()) {
+      case 'h' || 'help':
+        console.log(`[${moment().format()}] | Help requested.`);
+        console.log(`Command list\nh - help\nq - quit\n1 - start browser`);
+        break;
+    
+      case 'q':
+        console.log(`[${moment().format()}] | Quitting. Bye.`);
+        iWannaLoop = false;
+        break;
+
+      default:
+        console.log(`[${moment().format()}] | Unknown command. Try 'h' for help with commands.`);
+        break;
+    }
+    
+  } while (iWannaLoop)
 
   
 
@@ -143,7 +160,9 @@ async function helloWorld(settings) {
 
   // await marketScrape();
   process.exit();
-})();
+};
+
+start();
 
 // const getProductNameFromSelector = async el =>
 //   el
