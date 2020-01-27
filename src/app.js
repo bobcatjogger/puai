@@ -3,52 +3,6 @@ const util = require('./utils');
 const readline = require('readline');
 const moment = require('moment');
 
-async function startBrowser(settings) {
-  const browser = await puppeteer.launch({ headless:settings.isHeadless });
-  const page = await browser.newPage();
-  page.setViewport(settings.viewport);
-  settings.connection = browser.wsEndpoint();
-  console.log(`Connection1: ${settings.connection}`)
-  return {browser, page};
-}
-
-async function closeBrowser(browser) {
-  return browser.close();
-}
-
-async function connectBrowser(settings) {
-  console.log(`Attempt to reconnect to connection: ${settings.connection}`)
-  const browser = await puppeteer.connect({
-    'browserWSEndpoint': settings.connection,
-    'defaultViewport': settings.viewport
-  });
-  return browser;
-}
-
-// find the link, by going over all links on the page
-async function findByLink(page, linkString) {
-  const links = await page.$$('a')
-  for (var i=0; i < links.length; i++) {
-    let valueHandle = await links[i].getProperty('innerText');
-    let linkText = await valueHandle.jsonValue();
-    const text = getText(linkText);
-    if (linkString == text) {
-      console.log(linkString);
-      console.log(text);
-      console.log("Found");
-      return links[i];
-    }
-  }
-  return null;
-}
-
-// Apify.main(async () => {
-//   // Open a named dataset
-//   const dataset = await Apify.openDataset('puai');
-  
-//   // Launch the browser and navigate to the page
-//   const browser = await Apify.launchPuppeteer({ headless:isHeadless });
-//   const page = await browser.newPage();
 //   await page.goto(loginUrl, { waitUntil: 'networkidle2' });
 //   const emailInput = await page.waitFor('#login')
 //     .then( loginUrl => console.log('Arrived at: ', loginUrl));
@@ -94,25 +48,6 @@ async function askQuestion(query) {
   }))
 }
 
-async function helloWorld(settings) {
-  if (settings.connection) {
-    const browser = await connectBrowser(settings);  
-  }
-  else{
-    const {browser, page} = await startBrowser(settings);
-  }
-  
-  console.log(`Connection2: ${settings.connection}`)
-  
-
-  await page.goto(settings.loginUrl);
-  // await findByLink(page, "Lets Check It Out");
-  setTimeout(function() {
-    console.log('Zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
-}, 999999);
-  await closeBrowser(browser);
-}
-
 // Main entry point
 const start = async function() {
   console.log(`*** Starting at ${moment().format()} ***`);
@@ -127,42 +62,86 @@ const start = async function() {
     'puPass': process.env.PASS ? process.env.PASS : 'password goes here',
     'width': 1920,
     'height': 1080    
-  }
+  };
   settings.viewport = {'width': settings.width, 'height': settings.height};
   
   // start the party
+  {
+    let pup = {browser: null, page: null};
+    let iWannaLoop = true;
+    do {
+      let ans = await askQuestion(`[${moment().format()}] | Enter command :  `);
 
-  let iWannaLoop = true;
-  do {
-    let ans = await askQuestion(`[${moment().format()}] | Enter command :  `);
+      switch (ans.toLowerCase()) {
+        case 'h' || 'help':
+          console.log(`[${moment().format()}] | Help requested.`);
+          console.log(`Command list\nh - help\nq - quit\n1 - start browser`);
+          break;
 
-    switch (ans.toLowerCase()) {
-      case 'h' || 'help':
-        console.log(`[${moment().format()}] | Help requested.`);
-        console.log(`Command list\nh - help\nq - quit\n1 - start browser`);
-        break;
-    
-      case 'q':
-        console.log(`[${moment().format()}] | Quitting. Bye.`);
-        iWannaLoop = false;
-        break;
+        case 'q':
+          console.log(`[${moment().format()}] | Quitting. Bye.`);
+          iWannaLoop = false;
+          break;
 
-      default:
-        console.log(`[${moment().format()}] | Unknown command. Try 'h' for help with commands.`);
-        break;
-    }
-    
-  } while (iWannaLoop)
+        case '1':
+          console.log(`[${moment().format()}] | Start Browser Selected.`);
+          pup = await util.startBrowser(settings);
+          break;
 
-  
+        case '2':
+          console.log(`[${moment().format()}] | Login Selected.`);
 
-  
+          if (!pup.page) {
+            console.log(`[${moment().format()}] | Page is undefined - start or connect to a browser before logging in.`);
+            break;
+          }
+          await pup.page.goto(settings.loginUrl, {waitUntil: 'networkidle2'});
+          const emailInput = await pup.page.waitFor('#login')
+              .then(() => console.log(`[${moment().format()}] | Arrived at: ${settings.loginUrl}`));
 
+          // Login
+          await emailInput.type(settings.emailAddress)
+              .then(emailAddress => console.log(`[${moment().format()}] | Entered email: ${emailAddress}`));
+
+          await pup.page.type('#password', settings.puPass)
+              .then(puPass => console.log(`[${moment().format()}] | Entered Password (first 4): ${puPass.slice(0, 4)}`));
+
+          await pup.page.click('button.btn', {delay: util.getRandomDelay()})
+              .then(() => console.log('Clicked the login button.'));
+          break;
+
+        default:
+          console.log(`[${moment().format()}] | Unknown command. Try 'h' for help with commands.`);
+          break;
+      }
+    } while (iWannaLoop);
+  }
   // await marketScrape();
   process.exit();
 };
 
-start();
+start().then(r => console.log(`Result: ${r}`));
+
+
+
+async function helloWorld(settings) {
+  if (settings.connection) {
+    const browser = await connectBrowser(settings);
+  }
+  else{
+    const {browser, page} = await startBrowser(settings);
+  }
+
+  console.log(`Connection2: ${settings.connection}`);
+
+
+  await page.goto(settings.loginUrl);
+  // await findByLink(page, "Lets Check It Out");
+  setTimeout(function() {
+    console.log('Zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz');
+  }, 999999);
+  await closeBrowser(browser);
+}
 
 // const getProductNameFromSelector = async el =>
 //   el
